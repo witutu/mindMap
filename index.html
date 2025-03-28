@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>思维导图</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsmind@0.8.7/style/jsmind.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jsmind@0.8.7/es6/jsmind.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; /* 防止滚动干扰 */ background: #f4f4f4;}
+        #jsmind_container { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="jsmind_container"></div>
+
+    <script>
+       // 获取 query 参数
+       function getQueryParam(name) {
+            const search = new URLSearchParams(location.search);
+            return search.get(name);
+        }
+        // 获取小程序传过来的 data
+        const dataStr = getQueryParam('data');
+        const data = dataStr ? JSON.parse(decodeURIComponent(dataStr)) : { root: "空" };
+
+        // 转成 jsMind 支持的结构
+        const mind = {
+            "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
+            "format": "node_tree",
+            "data": data
+        };
+
+        // 定义思维导图数据
+        // const mind = {
+        //     "meta": {
+        //         "name": "demo",
+        //         "author": "you",
+        //         "version": "1.0"
+        //     },
+        //     "format": "node_tree",
+        //     "data": {
+        //         "id": "root",
+        //         "topic": "中心主题",
+        //         "children": [
+        //             { "id": "sub1", "topic": "子节点1" },
+        //             { "id": "sub2", "topic": "子节点2" },
+        //             {
+        //                 "id": "sub3", "topic": "子节点3", "children": [
+        //                     { "id": "sub3_1", "topic": "子节点3.1" },
+        //                     { "id": "sub3_2", "topic": "子节点3.2" }
+        //                 ]
+        //             }
+        //         ]
+        //     }
+        // };
+
+        // 初始化 jsMind
+        const options = {
+            container: 'jsmind_container',
+            editable: false,
+            theme: 'primary'
+        };
+        const jm = jsMind.show(options, mind);
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', () => jm.resize());
+
+        // 防止 iOS Safari 触发默认双指缩放
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+
+         // 初始化 Hammer.js 监听手势
+         document.addEventListener("DOMContentLoaded", function () {
+            const container = document.getElementById("jsmind_container");
+            const hammer = new Hammer(container);
+            hammer.get("pinch").set({ enable: true }); // 启用捏合缩放
+
+            hammer.on("pinchmove", function (e) {
+                e.preventDefault();
+                const scale = e.scale;
+                jm.view.zoomIn(scale);
+            });
+
+            hammer.on("pinchend", function (e) {
+                e.preventDefault();
+                const scale = e.scale;
+                jm.view.zoomOut(scale);
+            });
+
+            // 处理 touchmove 防止 iOS Safari 滚动
+            document.addEventListener("touchmove", function (e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        });
+    </script>
+</body>
+</html>
