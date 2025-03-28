@@ -63,7 +63,7 @@
             theme: 'primary'
         };
         const jm = jsMind.show(options, mind);
-
+        jm.view.setZoom(2); // 这里可以调整缩放比例，如 1.5 或 2
         // 监听窗口大小变化
         window.addEventListener('resize', () => jm.resize());
 
@@ -78,16 +78,39 @@
             const hammer = new Hammer(container);
             hammer.get("pinch").set({ enable: true }); // 启用捏合缩放
 
+            let currentScale = 1; // 记录当前缩放比例
+            const minScale = 0.5; // 最小缩放比例
+            const maxScale = 2;   // 最大缩放比例
+            let offsetX = 0, offsetY = 0; // 记录当前偏移
+
+            hammer.on("pinchstart", function (e) {
+                e.preventDefault();
+            });
+
             hammer.on("pinchmove", function (e) {
                 e.preventDefault();
-                const scale = e.scale;
-                jm.view.zoomIn(scale);
+                
+                // 计算新的缩放比例
+                let newScale = currentScale * e.scale;
+                newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
+
+                // 计算手指的中心点相对于容器的偏移
+                const rect = container.getBoundingClientRect();
+                const centerX = e.center.x - rect.left;
+                const centerY = e.center.y - rect.top;
+
+                // 计算缩放后的偏移量，保持手指位置固定
+                offsetX = centerX - (centerX - offsetX) * (newScale / currentScale);
+                offsetY = centerY - (centerY - offsetY) * (newScale / currentScale);
+
+                // 设置 jsMind 的缩放
+                jm.view.setZoom(newScale);
+                jm.view.setOffset(offsetX, offsetY);
             });
 
             hammer.on("pinchend", function (e) {
                 e.preventDefault();
-                const scale = e.scale;
-                jm.view.zoomOut(scale);
+                currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale)); // 记录缩放比例
             });
 
             // 处理 touchmove 防止 iOS Safari 滚动
