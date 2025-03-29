@@ -9,15 +9,19 @@
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; /* 防止滚动干扰 */ background: #f4f4f4;}
-        #jsmind_container { width: 100vw; height: 100vh; }
+        #jsmind_container { width: 100vw; height: 100vh; touch-action: none;}
+        #loading {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white; padding: 10px 20px;
+            border-radius: 8px; font-size: 16px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
-    <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-        background: rgba(0, 0, 0, 0.7); color: white; padding: 10px 20px; border-radius: 8px; 
-        font-size: 16px; z-index: 1000;">
-        正在渲染思维导图...
-    </div>
+    <div id="loading">正在渲染思维导图...</div>
     <div id="jsmind_container"></div>
 
     <script>
@@ -31,123 +35,168 @@
         const data = dataStr ? JSON.parse(decodeURIComponent(dataStr)) : { root: "空" };
 
         // 转成 jsMind 支持的结构
-        const mind = {
-            "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
-            "format": "node_tree",
-            "data": data
-        };
-
-        // 定义思维导图数据
         // const mind = {
-        //     "meta": {
-        //         "name": "demo",
-        //         "author": "you",
-        //         "version": "1.0"
-        //     },
+        //     "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
         //     "format": "node_tree",
-        //     "data": {
-        //         "id": "root",
-        //         "topic": "中心主题",
-        //         "children": [
-        //             { "id": "sub1", "topic": "子节点1" },
-        //             { "id": "sub2", "topic": "子节点2" },
-        //             {
-        //                 "id": "sub3", "topic": "子节点3", "children": [
-        //                     { "id": "sub3_1", "topic": "子节点3.1" },
-        //                     { "id": "sub3_2", "topic": "子节点3.2" }
-        //                 ]
-        //             }
-        //         ]
-        //     }
+        //     "data": data
         // };
 
-        // 初始化 jsMind
-        const options = {
-            container: 'jsmind_container',
-            editable: false,
-            theme: 'primary'
+        // 定义思维导图数据
+        const mind = {
+            "meta": {
+                "name": "demo",
+                "author": "you",
+                "version": "1.0"
+            },
+            "format": "node_tree",
+            "data": {
+                "id": "root",
+                "topic": "中心主题",
+                "children": [
+                    { "id": "sub1", "topic": "子节点1" },
+                    { "id": "sub2", "topic": "子节点2" },
+                    {
+                        "id": "sub3", "topic": "子节点3", "children": [
+                            { "id": "sub3_1", "topic": "子节点3.1" },
+                            { "id": "sub3_2", "topic": "子节点3.2" }
+                        ]
+                    }
+                ]
+            }
         };
 
-        setTimeout(() => {
-            try {
-                const jm = jsMind.show(options, mind);
-                jm.view.setZoom(1.5); // 设定缩放比例
+        let jm = null; // **存储 jsMind 实例**
+        let currentScale = 1; // **记录当前缩放比例**
+        const minScale = 0.5;
+        const maxScale = 2;
 
-                setTimeout(() => {
-                    const rootNode = jm.get_node('root');
-                    if (rootNode) {
-                        const container = document.getElementById('jsmind_container');
-                        const rect = container.getBoundingClientRect();
-                        const centerX = rect.width * 0.3; // 水平偏左
-                        const centerY = rect.height / 2; // 垂直居中
-                        jm.view.setOffset(centerX, centerY);
-                    }
+        // **初始化思维导图**
+        function initMindMap() {
+            const options = { container: 'jsmind_container', editable: false, theme: 'primary' };
+            jm = jsMind.show(options, mind);
+            jm.view.setZoom(1);
 
-                    // 确保隐藏 loading
-                    const loadingEl = document.getElementById('loading');
-                    if (loadingEl) {
-                        loadingEl.style.display = 'none';
-                    }
-                }, 200);
-                
-            } catch (error) {
-                console.error('思维导图加载失败:', error);
-            }
-        }, 500); // 适当延长延迟，确保渲染
+            // **隐藏 loading**
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 300);
+        }
 
-        // 防止 iOS Safari 触发默认双指缩放
-        document.addEventListener('gesturestart', function (e) {
-            e.preventDefault();
-        });
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(initMindMap, 500); // **等待 DOM 加载完成后初始化**
 
-         // 初始化 Hammer.js 监听手势
-         document.addEventListener("DOMContentLoaded", function () {
             const container = document.getElementById("jsmind_container");
             const hammer = new Hammer(container);
-            hammer.get("pinch").set({ enable: true }); // 启用捏合缩放
+            hammer.get("pinch").set({ enable: true });
 
-            let currentScale = 1; // 记录当前缩放比例
-            const minScale = 0.5; // 最小缩放比例
-            const maxScale = 2;   // 最大缩放比例
-            let offsetX = 0, offsetY = 0; // 记录当前偏移
-
-            hammer.on("pinchstart", function (e) {
-                e.preventDefault();
-            });
-
+            // **监听双指缩放**
             hammer.on("pinchmove", function (e) {
                 e.preventDefault();
-                
-                // 计算新的缩放比例
+                if (!jm) return;
+
                 let newScale = currentScale * e.scale;
-                newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
+                // newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
 
-                // 计算手指的中心点相对于容器的偏移
-                const rect = container.getBoundingClientRect();
-                const centerX = e.center.x - rect.left;
-                const centerY = e.center.y - rect.top;
-
-                // 计算缩放后的偏移量，保持手指位置固定
-                offsetX = centerX - (centerX - offsetX) * (newScale / currentScale);
-                offsetY = centerY - (centerY - offsetY) * (newScale / currentScale);
-
-                // 设置 jsMind 的缩放
+                console.log(`🔍 Scaling: ${currentScale} → ${newScale}`);
                 jm.view.setZoom(newScale);
-                jm.view.setOffset(offsetX, offsetY);
             });
 
+            // **更新当前缩放比例**
             hammer.on("pinchend", function (e) {
                 e.preventDefault();
-                currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale)); // 记录缩放比例
+                if (!jm) return;
+                // currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale));
+                urrentScale *= e.scale;
+                console.log("📌 Pinch End: New Scale =", currentScale);
             });
 
-            // 处理 touchmove 防止 iOS Safari 滚动
+            // **防止 iOS Safari 默认双指缩放**
+            document.addEventListener('gesturestart', function (e) {
+                e.preventDefault();
+            });
+
+            // **阻止 touchmove 造成滚动**
             document.addEventListener("touchmove", function (e) {
                 if (e.touches.length > 1) {
                     e.preventDefault();
                 }
             }, { passive: false });
         });
+
+        // 初始化 jsMind
+        // const options = {
+        //     container: 'jsmind_container',
+        //     editable: false,
+        //     theme: 'primary'
+        // };
+
+        // setTimeout(() => {
+        //     try {
+        //         const jm = jsMind.show(options, mind);
+        //         jm.view.setZoom(1.5); // 设定缩放比例
+
+        //         setTimeout(() => {
+        //             const rootNode = jm.get_node('root');
+        //             if (rootNode) {
+        //                 jm.view.relayout(); // 重新布局
+
+        //                 // 通过 CSS 或者 transform 调整偏移量
+        //                 const container = document.getElementById('jsmind_container');
+        //                 container.style.transform = "translate(10%, 0%)"; // 适当调整偏移
+        //             }
+
+        //             // 隐藏 loading
+        //             const loadingEl = document.getElementById('loading');
+        //             console.log('啥啦：', loadingEl);
+        //             if (loadingEl) {
+        //                 loadingEl.style.display = 'none';
+        //             }
+        //         }, 200);
+                
+        //     } catch (error) {
+        //         console.error('思维导图加载失败:', error);
+        //     }
+        // }, 500); // 适当延长延迟，确保渲染
+
+        // // 防止 iOS Safari 触发默认双指缩放
+        // document.addEventListener('gesturestart', function (e) {
+        //     e.preventDefault();
+        // });
+
+        //  // 初始化 Hammer.js 监听手势
+        //  document.addEventListener("DOMContentLoaded", function () {
+        //     const container = document.getElementById("jsmind_container");
+        //     const hammer = new Hammer(container);
+        //     hammer.get("pinch").set({ enable: true }); // 启用捏合缩放
+
+        //     let currentScale = 1; // 记录当前缩放比例
+        //     const minScale = 0.5; // 最小缩放比例
+        //     const maxScale = 2;   // 最大缩放比例
+
+        //     hammer.on("pinchstart", function (e) {
+        //         console.log("Pinch started", e);
+        //         e.preventDefault();
+        //     });
+
+        //     hammer.on("pinchmove", function (e) {
+        //         e.preventDefault();
+                
+        //         scale = Math.max(minScale, Math.min(maxScale, scale * e.scale));
+        //         container.style.transform = `scale(${scale})`;
+        //     });
+
+        //     hammer.on("pinchend", function (e) {
+        //         e.preventDefault();
+        //         currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale)); // 记录缩放比例
+        //     });
+
+        //     // 处理 touchmove 防止 iOS Safari 滚动
+        //     document.addEventListener("touchmove", function (e) {
+        //         if (e.touches.length > 1) {
+        //             e.preventDefault();
+        //         }
+        //     }, { passive: false });
+        // });
     </script>
 </body>
 </html>
