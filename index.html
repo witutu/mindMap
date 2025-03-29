@@ -13,6 +13,11 @@
     </style>
 </head>
 <body>
+    <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+        background: rgba(0, 0, 0, 0.7); color: white; padding: 10px 20px; border-radius: 8px; 
+        font-size: 16px; z-index: 1000;">
+        正在渲染思维导图...
+    </div>
     <div id="jsmind_container"></div>
 
     <script>
@@ -62,10 +67,29 @@
             editable: false,
             theme: 'primary'
         };
-        const jm = jsMind.show(options, mind);
-        jm.view.setZoom(2); // 这里可以调整缩放比例，如 1.5 或 2
-        // 监听窗口大小变化
-        window.addEventListener('resize', () => jm.resize());
+
+        // 添加一个短暂的延迟，确保提示可见
+        setTimeout(() => {
+            const jm = jsMind.show(options, mind);
+            jm.view.setZoom(1.5); // 这里可以调整缩放比例，如 1.5 或 2
+
+            // 确保根节点居中
+            setTimeout(() => {
+                const rootNode = jm.get_node('root');
+                if (rootNode) {
+                    const container = document.getElementById('jsmind_container');
+                    const rect = container.getBoundingClientRect();
+                    const centerX = rect.width * 0.3; // 水平偏左 30%
+                    const centerY = rect.height / 2; // 垂直居中
+
+                    jm.view.setOffset(centerX, centerY);
+                }
+
+                // 隐藏加载提示
+                document.getElementById('loading').style.display = 'none';
+            }, 200); // 延迟 200ms，等待渲染完成
+            window.addEventListener('resize', () => jm.resize());
+        }, 100); // 100ms 延迟确保提示可见
 
         // 防止 iOS Safari 触发默认双指缩放
         document.addEventListener('gesturestart', function (e) {
