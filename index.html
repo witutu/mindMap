@@ -68,28 +68,32 @@
             theme: 'primary'
         };
 
-        // 添加一个短暂的延迟，确保提示可见
         setTimeout(() => {
-            const jm = jsMind.show(options, mind);
-            jm.view.setZoom(1.5); // 这里可以调整缩放比例，如 1.5 或 2
+            try {
+                const jm = jsMind.show(options, mind);
+                jm.view.setZoom(1.5); // 设定缩放比例
 
-            // 确保根节点居中
-            setTimeout(() => {
-                const rootNode = jm.get_node('root');
-                if (rootNode) {
-                    const container = document.getElementById('jsmind_container');
-                    const rect = container.getBoundingClientRect();
-                    const centerX = rect.width * 0.3; // 水平偏左 30%
-                    const centerY = rect.height / 2; // 垂直居中
+                setTimeout(() => {
+                    const rootNode = jm.get_node('root');
+                    if (rootNode) {
+                        const container = document.getElementById('jsmind_container');
+                        const rect = container.getBoundingClientRect();
+                        const centerX = rect.width * 0.3; // 水平偏左
+                        const centerY = rect.height / 2; // 垂直居中
+                        jm.view.setOffset(centerX, centerY);
+                    }
 
-                    jm.view.setOffset(centerX, centerY);
-                }
-
-                // 隐藏加载提示
-                document.getElementById('loading').style.display = 'none';
-            }, 200); // 延迟 200ms，等待渲染完成
-            window.addEventListener('resize', () => jm.resize());
-        }, 100); // 100ms 延迟确保提示可见
+                    // 确保隐藏 loading
+                    const loadingEl = document.getElementById('loading');
+                    if (loadingEl) {
+                        loadingEl.style.display = 'none';
+                    }
+                }, 200);
+                
+            } catch (error) {
+                console.error('思维导图加载失败:', error);
+            }
+        }, 500); // 适当延长延迟，确保渲染
 
         // 防止 iOS Safari 触发默认双指缩放
         document.addEventListener('gesturestart', function (e) {
