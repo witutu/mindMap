@@ -35,35 +35,35 @@
         const data = dataStr ? JSON.parse(decodeURIComponent(dataStr)) : { root: "空" };
 
         // 转成 jsMind 支持的结构
-        // const mind = {
-        //     "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
-        //     "format": "node_tree",
-        //     "data": data
-        // };
+        const mind = {
+            "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
+            "format": "node_tree",
+            "data": data
+        };
 
         // 定义思维导图数据
-        const mind = {
-            "meta": {
-                "name": "demo",
-                "author": "you",
-                "version": "1.0"
-            },
-            "format": "node_tree",
-            "data": {
-                "id": "root",
-                "topic": "中心主题",
-                "children": [
-                    { "id": "sub1", "topic": "子节点1" },
-                    { "id": "sub2", "topic": "子节点2" },
-                    {
-                        "id": "sub3", "topic": "子节点3", "children": [
-                            { "id": "sub3_1", "topic": "子节点3.1" },
-                            { "id": "sub3_2", "topic": "子节点3.2" }
-                        ]
-                    }
-                ]
-            }
-        };
+        // const mind = {
+        //     "meta": {
+        //         "name": "demo",
+        //         "author": "you",
+        //         "version": "1.0"
+        //     },
+        //     "format": "node_tree",
+        //     "data": {
+        //         "id": "root",
+        //         "topic": "中心主题",
+        //         "children": [
+        //             { "id": "sub1", "topic": "子节点1" },
+        //             { "id": "sub2", "topic": "子节点2" },
+        //             {
+        //                 "id": "sub3", "topic": "子节点3", "children": [
+        //                     { "id": "sub3_1", "topic": "子节点3.1" },
+        //                     { "id": "sub3_2", "topic": "子节点3.2" }
+        //                 ]
+        //             }
+        //         ]
+        //     }
+        // };
 
         let jm = null; // **存储 jsMind 实例**
         let currentScale = 1; // **记录当前缩放比例**
