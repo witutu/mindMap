@@ -32,7 +32,7 @@
         }
         // 获取小程序传过来的 data
         const dataStr = getQueryParam('data');
-        const data = dataStr ? JSON.parse(decodeURIComponent(dataStr)) : { root: "空" };
+        const data = dataStr ? JSON.parse(decodeURIComponent(decodeURIComponent(dataStr))) : { root: "空" };
 
         // 转成 jsMind 支持的结构
         const mind = {
@@ -105,8 +105,8 @@
             hammer.on("pinchend", function (e) {
                 e.preventDefault();
                 if (!jm) return;
-                // currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale));
-                urrentScale *= e.scale;
+                currentScale *= e.scale;
+                // currentScale = Math.max(minScale, Math.min(maxScale, currentScale)); // 确保 scale 在允许范围内
                 console.log("📌 Pinch End: New Scale =", currentScale);
             });
 
