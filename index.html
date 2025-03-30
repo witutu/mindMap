@@ -88,6 +88,14 @@
             const container = document.getElementById("jsmind_container");
             const hammer = new Hammer(container);
             hammer.get("pinch").set({ enable: true });
+            
+            let startScale = 1; // 记录 pinch 开始时的 scale
+
+             // 监听 pinchstart 记录起始比例
+            hammer.on("pinchstart", function (e) {
+                e.preventDefault();
+                startScale = currentScale; // 记录 pinch 开始的缩放比例
+            });
 
             // **监听双指缩放**
             hammer.on("pinchmove", function (e) {
@@ -95,7 +103,7 @@
                 if (!jm) return;
 
                 let newScale = currentScale * e.scale;
-                // newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
+                newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
 
                 console.log(`🔍 Scaling: ${currentScale} → ${newScale}`);
                 jm.view.setZoom(newScale);
@@ -106,7 +114,7 @@
                 e.preventDefault();
                 if (!jm) return;
                 currentScale *= e.scale;
-                // currentScale = Math.max(minScale, Math.min(maxScale, currentScale)); // 确保 scale 在允许范围内
+                currentScale = Math.max(minScale, Math.min(maxScale, currentScale)); // 确保 scale 在允许范围内
                 console.log("📌 Pinch End: New Scale =", currentScale);
             });
 
