@@ -31,7 +31,7 @@
             return search.get(name);
         }
         // 获取小程序传过来的 data
-        const dataStr = getQueryParam('data');
+        /* const dataStr = getQueryParam('data');
         const data = dataStr ? JSON.parse(decodeURIComponent(decodeURIComponent(dataStr))) : { root: "空" };
 
         // 转成 jsMind 支持的结构
@@ -39,7 +39,34 @@
             "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
             "format": "node_tree",
             "data": data
-        };
+        }; */
+        // 获取小程序传过来的 id
+        async function fetchMindData() {
+            try {
+                const id = getQueryParam('data') || "default";
+                console.log('你有id吗：', id);
+                // const res = await fetch(`https://www.zxsl.zxmap.cn/ai-api/business/aiTask/${id}`);
+                // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/1909531692786434050`);
+                const res = await fetch(`http://192.168.110.113:8003/business/aiTask/${id}`);
+                const resJson = await res.json();
+                console.log(resJson);
+                
+                const data = JSON.parse(resJson.data.taskMindXxcMap);
+
+                if (!data) throw new Error("数据为空");
+
+                const mind = {
+                    meta: { name: "demo", author: "server", version: "1.0" },
+                    format: "node_tree",
+                    data: data
+                };
+
+                initMindMap(mind);
+            } catch (err) {
+                document.getElementById('loading').innerText = "❌ 数据加载失败";
+                console.error("加载失败", err);
+            }
+        }
 
         // 定义思维导图数据
         // const mind = {
@@ -71,7 +98,7 @@
         const maxScale = 2;
 
         // **初始化思维导图**
-        function initMindMap() {
+        function initMindMap(mind) {
             const options = { container: 'jsmind_container', editable: false, theme: 'primary' };
             jm = jsMind.show(options, mind);
             jm.view.setZoom(1);
@@ -83,7 +110,9 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            setTimeout(initMindMap, 500); // **等待 DOM 加载完成后初始化**
+            fetchMindData();
+
+            // setTimeout(initMindMap, 500); // **等待 DOM 加载完成后初始化**
 
             const container = document.getElementById("jsmind_container");
             const hammer = new Hammer(container);
