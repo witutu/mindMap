@@ -45,9 +45,9 @@
             try {
                 const id = getQueryParam('data') || "default";
                 console.log('你有id吗：', id);
-                // const res = await fetch(`https://www.zxsl.zxmap.cn/ai-api/business/aiTask/${id}`);
+                const res = await fetch(`https://www.zxsl.zxmap.cn/ai-api/business/aiTask/${id}`);
                 // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/1909531692786434050`);
-                const res = await fetch(`http://192.168.110.113:8003/business/aiTask/${id}`);
+                // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/${id}`);
                 const resJson = await res.json();
                 console.log(resJson);
                 
