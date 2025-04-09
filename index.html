@@ -30,21 +30,17 @@
             const search = new URLSearchParams(location.search);
             return search.get(name);
         }
-        // 获取小程序传过来的 data
-        /* const dataStr = getQueryParam('data');
-        const data = dataStr ? JSON.parse(decodeURIComponent(decodeURIComponent(dataStr))) : { root: "空" };
 
-        // 转成 jsMind 支持的结构
-        const mind = {
-            "meta": { "name": "demo", "author": "uniapp", "version": "1.0" },
-            "format": "node_tree",
-            "data": data
-        }; */
+        let jm = null; // **存储 jsMind 实例**
+        let currentScale = 1; // **记录当前缩放比例**
+        const minScale = 0.5;
+        const maxScale = 2;
+
         // 获取小程序传过来的 id
         async function fetchMindData() {
             try {
                 const id = getQueryParam('data') || "default";
-                console.log('你有id吗：', id);
+                console.log('id：', id);
                 const res = await fetch(`https://www.zxsl.zxmap.cn/ai-api/business/aiTask/${id}`);
                 // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/1909531692786434050`);
                 // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/${id}`);
@@ -67,35 +63,6 @@
                 console.error("加载失败", err);
             }
         }
-
-        // 定义思维导图数据
-        // const mind = {
-        //     "meta": {
-        //         "name": "demo",
-        //         "author": "you",
-        //         "version": "1.0"
-        //     },
-        //     "format": "node_tree",
-        //     "data": {
-        //         "id": "root",
-        //         "topic": "中心主题",
-        //         "children": [
-        //             { "id": "sub1", "topic": "子节点1" },
-        //             { "id": "sub2", "topic": "子节点2" },
-        //             {
-        //                 "id": "sub3", "topic": "子节点3", "children": [
-        //                     { "id": "sub3_1", "topic": "子节点3.1" },
-        //                     { "id": "sub3_2", "topic": "子节点3.2" }
-        //                 ]
-        //             }
-        //         ]
-        //     }
-        // };
-
-        let jm = null; // **存储 jsMind 实例**
-        let currentScale = 1; // **记录当前缩放比例**
-        const minScale = 0.5;
-        const maxScale = 2;
 
         // **初始化思维导图**
         function initMindMap(mind) {
@@ -159,81 +126,6 @@
                 }
             }, { passive: false });
         });
-
-        // 初始化 jsMind
-        // const options = {
-        //     container: 'jsmind_container',
-        //     editable: false,
-        //     theme: 'primary'
-        // };
-
-        // setTimeout(() => {
-        //     try {
-        //         const jm = jsMind.show(options, mind);
-        //         jm.view.setZoom(1.5); // 设定缩放比例
-
-        //         setTimeout(() => {
-        //             const rootNode = jm.get_node('root');
-        //             if (rootNode) {
-        //                 jm.view.relayout(); // 重新布局
-
-        //                 // 通过 CSS 或者 transform 调整偏移量
-        //                 const container = document.getElementById('jsmind_container');
-        //                 container.style.transform = "translate(10%, 0%)"; // 适当调整偏移
-        //             }
-
-        //             // 隐藏 loading
-        //             const loadingEl = document.getElementById('loading');
-        //             console.log('啥啦：', loadingEl);
-        //             if (loadingEl) {
-        //                 loadingEl.style.display = 'none';
-        //             }
-        //         }, 200);
-                
-        //     } catch (error) {
-        //         console.error('思维导图加载失败:', error);
-        //     }
-        // }, 500); // 适当延长延迟，确保渲染
-
-        // // 防止 iOS Safari 触发默认双指缩放
-        // document.addEventListener('gesturestart', function (e) {
-        //     e.preventDefault();
-        // });
-
-        //  // 初始化 Hammer.js 监听手势
-        //  document.addEventListener("DOMContentLoaded", function () {
-        //     const container = document.getElementById("jsmind_container");
-        //     const hammer = new Hammer(container);
-        //     hammer.get("pinch").set({ enable: true }); // 启用捏合缩放
-
-        //     let currentScale = 1; // 记录当前缩放比例
-        //     const minScale = 0.5; // 最小缩放比例
-        //     const maxScale = 2;   // 最大缩放比例
-
-        //     hammer.on("pinchstart", function (e) {
-        //         console.log("Pinch started", e);
-        //         e.preventDefault();
-        //     });
-
-        //     hammer.on("pinchmove", function (e) {
-        //         e.preventDefault();
-                
-        //         scale = Math.max(minScale, Math.min(maxScale, scale * e.scale));
-        //         container.style.transform = `scale(${scale})`;
-        //     });
-
-        //     hammer.on("pinchend", function (e) {
-        //         e.preventDefault();
-        //         currentScale = Math.max(minScale, Math.min(maxScale, currentScale * e.scale)); // 记录缩放比例
-        //     });
-
-        //     // 处理 touchmove 防止 iOS Safari 滚动
-        //     document.addEventListener("touchmove", function (e) {
-        //         if (e.touches.length > 1) {
-        //             e.preventDefault();
-        //         }
-        //     }, { passive: false });
-        // });
     </script>
 </body>
 </html>
