@@ -9,27 +9,20 @@
 <body>
   <div>你能不能打印成功？</div>
   <script>
-    console.log('👀 [脚本执行] 我在最顶层就执行了');
-  
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('✅ DOMContentLoaded 已触发');
-      document.body.innerHTML += '<p style="color:green">✅ DOMContentLoaded</p>';
-    });
-  
-    document.addEventListener('UniAppJSBridgeReady', () => {
-      console.log('✅ UniAppJSBridgeReady 已触发');
-      document.body.innerHTML += '<p style="color:blue">✅ UniAppJSBridgeReady</p>';
-      if(window.uni){
-        document.body.innerHTML += '<p style="color:blue">✅ 已调用 window.uni.postMessage</p>';
-        window.uni.postMessage({
-          data: 'hello uniapp'
-        });
-        console.log('✅ 已调用 window.uni.postMessage');
-      }else{
-        document.body.innerHTML += '<p style="color:red">❌ window.uni 不存在</p>';
-      }
-    });
-  </script>
+  console.log('页面加载')
+
+  document.addEventListener('UniAppJSBridgeReady', () => {
+    console.log('✅ UniAppJSBridgeReady')
+    if (window.uni) {
+      console.log('✅ window.uni 存在，发送 postMessage')
+      window.uni.postMessage({
+        data: { type: 'log', msg: 'hello from web' }
+      })
+    } else {
+      console.error('❌ window.uni 不存在')
+    }
+  })
+</script>
   
 </body>
 </html>
