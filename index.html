@@ -1,134 +1,1234 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <title>思维导图</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'">
-    <!-- <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsmind@0.8.7/style/jsmind.css" />
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jsmind@0.8.7/es6/jsmind.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script> -->
     <link rel="stylesheet" href="./jsmind.css">
     <script src="./jsmind.js"></script>
     <script src="./hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script type="text/javascript" src="https://gitcode.net/dcloud/uni-app/-/raw/dev/dist/uni.webview.1.5.6.js"></script>
+
     <style>
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; touch-action: none; /* 防止滚动干扰 */ background: #f4f4f4;}
-        #jsmind_container { width: 100vw; height: 100vh; touch-action: none;}
+        :root {
+            --primary-bg: #f4f4f4;
+            --menu-bg: white;
+            --menu-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            --menu-border: #eee;
+            --menu-hover: #f5f5f5;
+            --loading-bg: rgba(0, 0, 0, 0.7);
+            --text-color: #333;
+            --menu-item-size: 28px;
+            --menu-z-index: 1000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            background: var(--primary-bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #jsmind_container {
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+            padding-bottom: 65px;
+            padding-top: 24px;
+            box-sizing: border-box;
+        }
+
         #loading {
-            position: absolute; top: 50%; left: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white; padding: 10px 20px;
-            border-radius: 8px; font-size: 16px;
-            z-index: 1000;
+            background: var(--loading-bg);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            z-index: var(--menu-z-index);
+            transition: opacity 0.3s ease;
+        }
+
+        .node-menu {
+            position: fixed;
+            background: var(--menu-bg);
+            border-radius: 4px;
+            box-shadow: var(--menu-shadow);
+            display: none;
+            z-index: var(--menu-z-index);
+            padding: 5px;
+            flex-direction: row;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .node-menu.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .node-menu-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: var(--menu-item-size);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            margin: 0 2px;
+            border-radius: 3px;
+            transition: background-color 0.2s ease;
+        }
+
+        .node-menu-item:hover {
+            background-color: var(--menu-hover);
+        }
+
+        .node-menu-item + .node-menu-item {
+            border-left: 1px solid var(--menu-border);
+            margin-left: 5px;
+            padding-left: 5px;
+        }
+
+        .node-menu-item i {
+            margin-right: 5px;
+            font-size: var(--menu-item-size);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        /* 顶部操作 */
+        .top-buttons {
+            position: fixed;
+            z-index: var(--menu-z-index);
+            display: flex;
+            top: 0;
+            width: 100%;
+            background-color: #f4f4f4;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+            justify-content: right;
+        }
+
+        .top-button {
+            width: 24px;
+            height: 24px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        /* 左下角按钮组 */
+        .bottom-buttons {
+            position: fixed;
+            z-index: var(--menu-z-index);
+            display: flex;
+            bottom: 0;
+            width: 100%;
+            background-color: #f4f4f4;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+            gap: 20px;
+            justify-content: right;
+        }
+
+        .bottom-button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            /* background: var(--menu-bg); */
+            border: none;
+            box-shadow: var(--menu-shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1;
+            transition: all 0.2s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* .bottom-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .bottom-button:active:not(:disabled) {
+            transform: scale(0.95);
+        } */
+
+        .bottom-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .bottom-button.sibling {
+            color: white;
+        }
+
+        /* .bottom-button.sibling:hover:not(:disabled) {
+            background: #F57C00;
+        } */
+
+        .bottom-button.child {
+            color: white;
+        }
+
+        /* .bottom-button.child:hover:not(:disabled) {
+            background: #1976D2;
+        } */
+
+        .show-expand-type {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            bottom: 0;
+            width: 100%;
+            background-color: #f4f4f4;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            color: #292929;
+        }
+
+        .show-expand-type .showtitle {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .show-expand-type .showTypeTitle {
+            font-size: 18px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .show-expand-type .iconSvg {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .show-expand-type .showTypeContent {
+            background-color: #fff;
+            border-radius: 20px;
+            font-size: 18px;
+        }
+
+        .show-expand-type .showTypeItem {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .show-expand-type .line {
+            width: 100%;
+            height: 1px;
+            background-color: #e0e0e0;
         }
     </style>
 </head>
 <body>
     <div id="loading">正在渲染思维导图...</div>
+    <div class="top-buttons">
+        <div class="top-button" id="expandAllBtn">
+            <svg t="1752630957149" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="944" width="200" height="200"><path d="M512 640.64a42.666667 42.666667 0 0 0 42.666667-42.666667v-341.333333h130.986666a21.333333 21.333333 0 0 0 14.250667-5.461333l2.688-2.901334a21.333333 21.333333 0 0 0-4.010667-29.909333l-165.717333-126.464a32 32 0 0 0-38.912 0.042667L329.472 218.453333a21.333333 21.333333 0 0 0 12.970667 38.229334H469.333333v341.333333a42.666667 42.666667 0 0 0 42.666667 42.666667z m229.674667-298.368a42.666667 42.666667 0 0 0 4.992 85.034667H853.333333v426.666666H170.666667v-426.666666h106.666666a42.666667 42.666667 0 0 0 0-85.333334H170.666667a85.333333 85.333333 0 0 0-85.333334 85.333334v426.666666a85.333333 85.333333 0 0 0 85.333334 85.333334h682.666666a85.333333 85.333333 0 0 0 85.333334-85.333334v-426.666666a85.333333 85.333333 0 0 0-85.333334-85.333334h-106.666666z" fill="#000000" p-id="945"></path></svg>
+        </div>
+    </div>
     <div id="jsmind_container"></div>
+    
+    <div class="node-menu" id="nodeMenu">
+        <div class="node-menu-item" id="addChildNode" data-action="add">
+            <i>➕</i> 新增
+        </div>
+        <div class="node-menu-item" id="editNode" data-action="edit">
+            <i>✏️</i> 编辑
+        </div>
+        <div class="node-menu-item" id="deleteNode" data-action="delete">
+            <i>🗑️</i> 删除
+        </div>
+    </div>
+
+    <!-- 左下角按钮组 -->
+    <div class="bottom-buttons">
+        <button class="bottom-button sibling" id="addSiblingBtn" title="添加兄弟节点（同级节点）">
+            <svg t="1752627873304" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1507" width="200" height="200"><path d="M672 432c-120.3 0-219.9 88.5-237.3 204H320c-15.5 0-28-12.5-28-28V244h291c14.2 35.2 48.7 60 89 60 53 0 96-43 96-96s-43-96-96-96c-40.3 0-74.8 24.8-89 60H112v72h108v364c0 55.2 44.8 100 100 100h114.7c17.4 115.5 117 204 237.3 204 132.5 0 240-107.5 240-240S804.5 432 672 432z m128 266c0 4.4-3.6 8-8 8h-86v86c0 4.4-3.6 8-8 8h-52c-4.4 0-8-3.6-8-8v-86h-86c-4.4 0-8-3.6-8-8v-52c0-4.4 3.6-8 8-8h86v-86c0-4.4 3.6-8 8-8h52c4.4 0 8 3.6 8 8v86h86c4.4 0 8 3.6 8 8v52z" p-id="1508"></path></svg>
+        </button>
+        <button class="bottom-button child" id="addChildBtn" title="添加子节点（下级节点）">
+            <svg t="1752627743421" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1193" width="200" height="200"><path d="M688 240c-138 0-252 102.8-269.6 236H249c-14.2-35.2-48.7-60-89-60-53 0-96 43-96 96s43 96 96 96c40.3 0 74.8-24.8 89-60h169.3C436 681.2 550 784 688 784c150.2 0 272-121.8 272-272S838.2 240 688 240z m128 298c0 4.4-3.6 8-8 8h-86v86c0 4.4-3.6 8-8 8h-52c-4.4 0-8-3.6-8-8v-86h-86c-4.4 0-8-3.6-8-8v-52c0-4.4 3.6-8 8-8h86v-86c0-4.4 3.6-8 8-8h52c4.4 0 8 3.6 8 8v86h86c4.4 0 8 3.6 8 8v52z" p-id="1194"></path></svg>
+        </button>
+    </div>
+
+    <div class="show-expand-type">
+        <div class="showtitle">
+            <div class="showTypeTitle">导出为</div>
+            <div class="showTypeClose iconSvg" id="closeShowType"><svg t="1752632412129" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="974" width="200" height="200"><path d="M666.17 716.5c-7.73 0-15.46-2.95-21.36-8.85L336.47 399.31c-11.8-11.8-11.8-30.92 0-42.72s30.92-11.8 42.72 0l308.35 308.35c11.8 11.8 11.8 30.92 0 42.72a30.184 30.184 0 0 1-21.37 8.84z" p-id="975"></path><path d="M357.83 716.5c-7.73 0-15.46-2.95-21.36-8.85-11.8-11.8-11.8-30.92 0-42.72l308.35-308.35c11.8-11.8 30.92-11.8 42.72 0s11.8 30.92 0 42.72L379.19 707.65c-5.9 5.9-13.63 8.85-21.36 8.85z" p-id="976"></path><path d="M512 945C273.25 945 79 750.76 79 512S273.25 79 512 79s433 194.24 433 433-194.25 433-433 433z m0-805.58c-205.45 0-372.58 167.13-372.58 372.58S306.55 884.58 512 884.58 884.58 717.45 884.58 512 717.45 139.42 512 139.42z" p-id="977"></path></svg></div>
+        </div>
+        <div class="showTypeContent">
+            <div class="showTypeItem" data-type="pdf">
+                PDF
+                <div class="iconSvg">
+                    <svg t="1752633666538" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1065" width="200" height="200"><path d="M875.1 301.8L597.3 21.3c-4.5-4.5-9.4-8.3-14.7-11.5-1.4-0.8-2.8-1.6-4.3-2.3-0.9-0.5-1.9-0.9-2.8-1.3-9-4-18.9-6.2-29-6.2h-345c-39.8 0-73 32.2-73 72v880c0 39.8 33.2 72 73 72h623c39.8 0 71-32.2 71-72V352.5c0-19-7-37.2-20.4-50.7zM583.5 110.4L784.3 312H583.5V110.4z m240 841.6h-623V72h311v240c0 39.8 33.2 72 73 72h239v568z" fill="#040000" p-id="1066"></path><path d="M333.2 576h-66.7v192h46v-64h22.1c40.4 0 75.6-20.2 75.6-65.7-0.1-47.3-34.7-62.3-77-62.3z m-0.9 92h-19.8v-56H331c22.2 0 34.5 7 34.5 26.4 0 18.7-10.8 29.6-33.2 29.6zM498 576h-55.5v192h58.1c55.8 0 94.4-30.4 94.4-97s-38.6-95-97-95z m-2.9 155h-5.6V613h5.6c30.9 0 52.7 12.8 52.7 58.3S526 731 495.1 731zM752.5 614v-38h-122v192h46v-73h65v-38h-65v-43z" fill="#040000" p-id="1067"></path></svg>
+                </div>
+            </div>
+            <div class="line"></div>
+            <div class="showTypeItem" data-type="image">  
+                思维导图图片
+                <div class="iconSvg">
+                    <svg t="1752633693004" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1227" width="200" height="200"><path d="M659.4 311.8h225.2c10 0 18-8 18-18V181c0-10-8-18-18-18H659.4c-10 0-18 8-18 18v46.6h-50.2c-48.6 0-88 39.4-88 88V432c0 39.8-32.2 72-72 72h-49c-4-37.2-35.6-66.4-73.8-66.4H195.8c-41 0-74.4 33.4-74.4 74.4s33.4 74.4 74.4 74.4h112.4c38.2 0 69.8-29 73.8-66.4h49c39.8 0 72 32.2 72 72v116.4c0 48.6 39.4 88 88 88h50.2v50.4c0 10 8 18 18 18h225.2c10 0 18-8 18-18v-112.6c0-10-8-18-18-18H659.4c-10 0-18 8-18 18v46.2h-50.2c-39.8 0-72-32.2-72-72V592c0-29.8-14.8-56-37.4-72h159.6v48.4c0 10 8 18 18 18h225.2c10 0 18-8 18-18v-112.6c0-10-8-18-18-18H659.4c-10 0-18 8-18 18V504h-159.6c22.6-16 37.4-42.2 37.4-72v-116.4c0-39.8 32.2-72 72-72h50.2v50.2c0 9.8 8 18 18 18z" fill="#212930" p-id="1228"></path></svg>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-       // 获取 query 参数
-       function getQueryParam(name) {
-            const search = new URLSearchParams(location.search);
-            return search.get(name);
+        'use strict';
+
+        // 配置常量
+        const CONFIG = {
+            SCALE: {
+                MIN: 0.5,
+                MAX: 2,
+                DEFAULT: 1
+            },
+            TIMINGS: {
+                DOUBLE_CLICK: 300,
+                MENU_DELAY: 200,
+                LOADING_HIDE: 300,
+                RETRY_DELAY: 100,
+                UPDATE_INTERVAL: 100
+            },
+            MENU: {
+                OFFSET: 10,
+                MIN_DISTANCE: 10,
+                DEFAULT_WIDTH: 150,
+                DEFAULT_HEIGHT: 60
+            },
+            DRAG: {
+                THRESHOLD: 5  // 拖拽检测阈值（像素）
+            },
+            API: {
+                BASE_URL: 'https://www.zxsl.zxmap.cn/ai-api/business/aiTask/',
+                DEFAULT_ID: '1927009104298840066'
+            }
+        };
+
+        // 应用状态管理
+        class AppState {
+            constructor() {
+                this.jm = null;
+                this.currentScale = CONFIG.SCALE.DEFAULT;
+                this.selectedNode = null;
+                this.lastClickTime = 0;
+                this.isDoubleClicking = false;
+                this.menuVisible = false;
+                this.currentNodeClickPosition = { x: 0, y: 0, nodeId: null };
+                this.menuUpdateTimer = null;
+                this.elements = {};
+                this.suppressMenuOnce = false;
+            }
+
+            initElements() {
+                this.elements = {
+                    loading: document.getElementById('loading'),
+                    container: document.getElementById('jsmind_container'),
+                    nodeMenu: document.getElementById('nodeMenu'),
+                    addChildNode: document.getElementById('addChildNode'),
+                    editNode: document.getElementById('editNode'),
+                    deleteNode: document.getElementById('deleteNode'),
+                    addSiblingBtn: document.getElementById('addSiblingBtn'),
+                    addChildBtn: document.getElementById('addChildBtn'),
+                    expandAllBtn: document.getElementById('expandAllBtn'),
+                    showExpandType: document.querySelector('.show-expand-type'),
+                    closeShowType: document.getElementById('closeShowType')
+                };
+            }
+
+            setCurrentNodeClickPosition(position) {
+                this.currentNodeClickPosition = { ...position };
+            }
+
+            clearCurrentNodeClickPosition() {
+                this.currentNodeClickPosition = { x: 0, y: 0, nodeId: null };
+            }
+
+            setMenuVisible(visible) {
+                this.menuVisible = visible;
+                if (visible) {
+                    this.elements.nodeMenu.classList.add('show');
+                } else {
+                    this.elements.nodeMenu.classList.remove('show');
+                }
+            }
         }
 
-        let jm = null; // **存储 jsMind 实例**
-        let currentScale = 1; // **记录当前缩放比例**
-        const minScale = 0.5;
-        const maxScale = 2;
+        // 工具函数
+        const Utils = {
+            getQueryParam(name) {
+                const search = new URLSearchParams(location.search);
+                return search.get(name);
+            },
 
-        // 获取小程序传过来的 id
-        async function fetchMindData() {
-            try {
-                const id = getQueryParam('data') || "default";
-                console.log('id：', id);
-                const res = await fetch(`https://www.zxsl.zxmap.cn/ai-api/business/aiTask/${id}`);
-                // const res = await fetch(`http://192.168.110.111:8003/business/aiTask/1919949052468342786`);
-                // const res = await fetch(`http://192.168.110.113:8003/business/aiTask/${id}`);
-                const resJson = await res.json();
-                console.log(resJson);
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            },
+
+            throttle(func, limit) {
+                let inThrottle;
+                return function(...args) {
+                    if (!inThrottle) {
+                        func.apply(this, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                };
+            },
+
+            clamp(value, min, max) {
+                return Math.min(Math.max(value, min), max);
+            },
+
+            hideElement(element, delay = 0) {
+                setTimeout(() => {
+                    if (element) {
+                        element.style.display = 'none';
+                    }
+                }, delay);
+            },
+
+            showErrorMessage(message) {
+                const loading = appState.elements.loading;
+                if (loading) {
+                    loading.innerHTML = `<span class="error-message">${message}</span>`;
+                }
+            }
+        };
+
+        // 数据获取模块
+        class DataManager {
+            static async fetchMindData() {
+                try {
+                    const id = Utils.getQueryParam('data') || CONFIG.API.DEFAULT_ID;
+                    console.log('获取数据ID:', id);
+                    
+                    const url = `${CONFIG.API.BASE_URL}${id}`;
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+                    
+                    const resJson = await response.json();
+                    console.log('API响应:', resJson);
+                    
+                    if (!resJson.data?.taskMindXxcMap) {
+                        throw new Error("数据格式错误");
+                    }
                 
                 const data = JSON.parse(resJson.data.taskMindXxcMap);
 
-                if (!data) throw new Error("数据为空");
+                    if (!data) {
+                        throw new Error("数据为空");
+                    }
 
                 const mind = {
-                    meta: { name: "demo", author: "server", version: "1.0" },
+                    meta: { name: "思维导图", author: "系统", version: "1.0" },
                     format: "node_tree",
                     data: data
                 };
 
-                initMindMap(mind);
+                    MindMapManager.init(mind);
             } catch (err) {
-                document.getElementById('loading').innerText = "❌ 数据加载失败";
-                console.error("加载失败", err);
+                    console.error("数据加载失败:", err);
+                    Utils.showErrorMessage("❌ 数据加载失败");
+                }
             }
         }
 
-        // **初始化思维导图**
-        function initMindMap(mind) {
-            const options = { container: 'jsmind_container', editable: false, theme: 'primary' };
-            jm = jsMind.show(options, mind);
-            jm.view.setZoom(1);
+        // 思维导图管理模块
+        class MindMapManager {
+            static init(mind) {
+                try {
+            const options = { 
+                container: 'jsmind_container', 
+                editable: true, 
+                theme: 'primary'
+            };
+            
+                    appState.jm = jsMind.show(options, mind);
+                    appState.jm.view.setZoom(CONFIG.SCALE.DEFAULT);
 
-            // **隐藏 loading**
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-            }, 300);
+                    Utils.hideElement(appState.elements.loading, CONFIG.TIMINGS.LOADING_HIDE);
+                    
+                    NodeEditor.init();
+                    TouchManager.init();
+                    
+                    // 初始化按钮状态
+                    NodeEditor.updateBottomButtonsState();
+                } catch (err) {
+                    console.error("思维导图初始化失败:", err);
+                    Utils.showErrorMessage("❌ 思维导图初始化失败");
+                }
+            }
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            fetchMindData();
+        // 节点编辑器模块
+        class NodeEditor {
+            static init() {
+                this.bindEvents();
+                this.initMenuEvents();
+            }
 
-            // setTimeout(initMindMap, 500); // **等待 DOM 加载完成后初始化**
+            static bindEvents() {
+                // 节点点击事件
+                appState.elements.container.addEventListener('mousedown', this.handleMouseDown.bind(this), true);
+                
+                // jsMind事件监听
+                appState.jm.add_event_listener(this.handleJsMindEvent.bind(this));
+                
+                // 画布点击事件
+                appState.elements.container.addEventListener('click', this.handleCanvasClick.bind(this));
+                
+                // 窗口大小变化事件
+                window.addEventListener('resize', Utils.debounce(this.updateMenuPosition.bind(this), 100));
+                
+                // 全局点击事件
+                document.addEventListener('click', this.handleDocumentClick.bind(this));
+                
+                // 鼠标拖拽事件 - 隐藏菜单
+                appState.elements.container.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                
+                // 滚轮缩放事件 - 隐藏菜单
+                document.addEventListener('wheel', this.handleWheel.bind(this));
+                
+                // 触摸移动事件 - 隐藏菜单
+                appState.elements.container.addEventListener('touchmove', this.handleTouchMove.bind(this));
+                
+                // 触摸开始事件 - 记录触摸位置
+                appState.elements.container.addEventListener('touchstart', this.handleTouchStart.bind(this));
+                
+                // 鼠标释放事件 - 清理拖拽状态
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                
+                // 触摸结束事件 - 清理触摸状态
+                document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+                
+                // 底部按钮事件
+                this.bindBottomButtons();
 
-            const container = document.getElementById("jsmind_container");
-            const hammer = new Hammer(container);
-            hammer.get("pinch").set({ enable: true });
-            
-            let startScale = 1; // 记录 pinch 开始时的 scale
+                // 顶部按钮事件
+                this.bindTopButtons();
+            }
 
-             // 监听 pinchstart 记录起始比例
-            hammer.on("pinchstart", function (e) {
+            static bindTopButtons() {
+                appState.elements.expandAllBtn.addEventListener('click', this.handleExpandAll.bind(this));
+                appState.elements.closeShowType.addEventListener('click', ()=>{
+                    appState.elements.showExpandType.style.display = 'none';
+                });
+
+                const items = document.querySelectorAll('.showTypeItem');
+                items.forEach(item => {
+                    item.addEventListener('click', this.handleExportTypeClick.bind(this));
+                });
+            }
+
+            static initMenuEvents() {
+                // 菜单项点击事件
+                appState.elements.nodeMenu.addEventListener('click', this.handleMenuClick.bind(this));
+                
+                // 阻止菜单事件冒泡
+                appState.elements.nodeMenu.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
+
+            static bindBottomButtons() {
+                // 添加兄弟节点按钮
+                appState.elements.addSiblingBtn.addEventListener('click', this.handleAddSibling.bind(this));
+                
+                // 添加子节点按钮
+                appState.elements.addChildBtn.addEventListener('click', this.handleAddChild.bind(this));
+                
+                // 初始化按钮状态
+                this.updateBottomButtonsState();
+            }
+
+            static handleMouseDown(e) {
+                const clickPosition = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    width: e.target.offsetWidth,
+                    height: e.target.offsetHeight
+                };
+                
+                // 存储点击位置，用于后续菜单显示
+                this.lastClickPosition = clickPosition;
+                
+                // 存储鼠标按下的初始位置，用于检测拖拽
+                this.mouseDownPosition = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    time: Date.now()
+                };
+            }
+
+            static handleJsMindEvent(type, data) {
+                if (data.evt === 'select_node') {
+                    this.handleNodeSelect();
+                } else if (data.evt === 'dblclick_node') {
+                    this.hideMenu();
+                } else if (type === 'click_on_canvas') {
+                    this.hideMenu();
+                }
+                
+                // 任何节点操作后都更新按钮状态
+                this.updateBottomButtonsState();
+            }
+
+            static handleNodeSelect() {
+                const selectedNode = appState.jm.get_selected_node();
+                if (!selectedNode || !this.lastClickPosition) return;
+
+                appState.selectedNode = selectedNode;
+
+                if (appState.suppressMenuOnce) {
+                    // 跳过菜单显示，只做选中
+                    appState.suppressMenuOnce = false;
+                    this.updateBottomButtonsState();
+                    return;
+                }
+                
+                appState.setCurrentNodeClickPosition({
+                    x: this.lastClickPosition.x,
+                    y: this.lastClickPosition.y,
+                    width: this.lastClickPosition.width,
+                    height: this.lastClickPosition.height,
+                    nodeId: selectedNode.id
+                });
+
+                this.showMenuAtPosition(this.lastClickPosition.x, this.lastClickPosition.y);
+                
+                // 更新底部按钮状态
+                this.updateBottomButtonsState();
+            }
+
+            static showMenuAtPosition(x, y) {
+                const menu = appState.elements.nodeMenu;
+                const menuWidth = menu.offsetWidth || CONFIG.MENU.DEFAULT_WIDTH;
+                const menuHeight = menu.offsetHeight || CONFIG.MENU.DEFAULT_HEIGHT;
+                
+                let left = x - (menuWidth / 2);
+                let top = y - menuHeight - CONFIG.MENU.OFFSET;
+
+                // 边界检查
+                if (top < CONFIG.MENU.MIN_DISTANCE) {
+                    top = y + CONFIG.MENU.OFFSET;
+                }
+                if (left < CONFIG.MENU.MIN_DISTANCE) {
+                    left = CONFIG.MENU.MIN_DISTANCE;
+                }
+                if (left > window.innerWidth - menuWidth - CONFIG.MENU.MIN_DISTANCE) {
+                    left = window.innerWidth - menuWidth - CONFIG.MENU.MIN_DISTANCE;
+                }
+
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+                
+                appState.setMenuVisible(true);
+                this.startMenuTracking();
+            }
+
+            static startMenuTracking() {
+                if (appState.menuUpdateTimer) {
+                    clearInterval(appState.menuUpdateTimer);
+                }
+                
+                appState.menuUpdateTimer = setInterval(() => {
+                    if (appState.menuVisible && appState.selectedNode) {
+                        this.updateMenuPosition();
+                    } else {
+                        this.stopMenuTracking();
+                    }
+                }, CONFIG.TIMINGS.UPDATE_INTERVAL);
+            }
+
+            static stopMenuTracking() {
+                if (appState.menuUpdateTimer) {
+                    clearInterval(appState.menuUpdateTimer);
+                    appState.menuUpdateTimer = null;
+                }
+            }
+
+            static updateMenuPosition() {
+                if (!appState.selectedNode || !appState.menuVisible) return;
+
+                const nodeElement = this.findNodeElement(appState.selectedNode.id);
+                if (!nodeElement) return;
+
+                const rect = nodeElement.getBoundingClientRect();
+                if (rect.width === 0 && rect.height === 0) {
+                    setTimeout(() => this.updateMenuPosition(), CONFIG.TIMINGS.RETRY_DELAY);
+                    return;
+                }
+
+                const menu = appState.elements.nodeMenu;
+                const menuWidth = menu.offsetWidth || CONFIG.MENU.DEFAULT_WIDTH;
+                const menuHeight = menu.offsetHeight || CONFIG.MENU.DEFAULT_HEIGHT;
+                
+                let left = appState.currentNodeClickPosition.x - (menuWidth / 2);
+                let top = appState.currentNodeClickPosition.y - menuHeight - CONFIG.MENU.OFFSET;
+
+                // 边界检查
+                if (top < CONFIG.MENU.MIN_DISTANCE) {
+                    top = appState.currentNodeClickPosition.y + CONFIG.MENU.OFFSET;
+                }
+                if (left < CONFIG.MENU.MIN_DISTANCE) {
+                    left = CONFIG.MENU.MIN_DISTANCE;
+                }
+
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            }
+
+            static findNodeElement(nodeId) {
+                const selectors = [
+                    `[nodeid="${nodeId}"]`,
+                    `#${nodeId}`,
+                    `jmnode[nodeid="${nodeId}"]`
+                ];
+                
+                for (const selector of selectors) {
+                    const element = document.querySelector(selector);
+                    if (element) return element;
+                }
+                
+                // 备选方案：遍历所有节点
+                const allNodes = document.querySelectorAll('jmnode');
+                for (const node of allNodes) {
+                    if (node.getAttribute('nodeid') === nodeId) {
+                        return node;
+                    }
+                }
+                
+                return null;
+            }
+
+            static handleCanvasClick(e) {
+                if (!e.target.closest('jmnode') && !e.target.closest('.node-menu') && !e.target.closest('.bottom-buttons')) {
+                    this.hideMenu();
+                    appState.clearCurrentNodeClickPosition();
+                    appState.selectedNode = null;
+                    this.updateBottomButtonsState();
+                }
+            }
+
+            static handleDocumentClick() {
+                if (appState.menuVisible) {
+                    this.hideMenu();
+                }
+            }
+
+            static handleMouseMove(e) {
+                // 检测是否是拖拽操作（鼠标按下时移动）
+                if (e.buttons > 0) {
+                    // 如果有mouseDownPosition，检测是否开始拖拽
+                    if (this.mouseDownPosition) {
+                        const deltaX = Math.abs(e.clientX - this.mouseDownPosition.x);
+                        const deltaY = Math.abs(e.clientY - this.mouseDownPosition.y);
+                        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        
+                        // 如果移动距离超过阈值，认为是拖拽操作
+                        if (distance > CONFIG.DRAG.THRESHOLD) {
+                            if (appState.menuVisible) {
+                                this.hideMenu();
+                            }
+                            // 清除mouseDownPosition，避免重复检测
+                            this.mouseDownPosition = null;
+                        }
+                    } else if (appState.menuVisible) {
+                        // 如果没有mouseDownPosition但鼠标按下，直接隐藏菜单
+                        this.hideMenu();
+                    }
+                }
+            }
+
+            static handleWheel(e) {
+                // 滚轮缩放时隐藏菜单
+                if (appState.menuVisible) {
+                    this.hideMenu();
+                }
+            }
+
+            static handleTouchStart(e) {
+                // 存储触摸开始位置
+                if (e.touches.length === 1) {
+                    this.touchStartPosition = {
+                        x: e.touches[0].clientX,
+                        y: e.touches[0].clientY,
+                        time: Date.now()
+                    };
+                }
+            }
+
+            static handleTouchMove(e) {
+                // 检测是否是拖拽操作
+                if (e.touches.length === 1 && this.touchStartPosition) {
+                    const deltaX = Math.abs(e.touches[0].clientX - this.touchStartPosition.x);
+                    const deltaY = Math.abs(e.touches[0].clientY - this.touchStartPosition.y);
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    // 如果移动距离超过阈值，认为是拖拽操作
+                    if (distance > CONFIG.DRAG.THRESHOLD && appState.menuVisible) {
+                        this.hideMenu();
+                    }
+                } else if (appState.menuVisible) {
+                    // 多点触控时隐藏菜单
+                    this.hideMenu();
+                }
+            }
+
+            static handleMouseUp(e) {
+                // 清理拖拽状态
+                this.mouseDownPosition = null;
+            }
+
+            static handleTouchEnd(e) {
+                // 清理触摸状态
+                this.touchStartPosition = null;
+            }
+
+            static hideMenu() {
+                appState.setMenuVisible(false);
+                appState.selectedNode = null;
+                this.stopMenuTracking();
+                
+                // 更新底部按钮状态
+                this.updateBottomButtonsState();
+            }
+
+            static handleMenuClick(e) {
+                const item = e.target.closest('.node-menu-item');
+                if (!item || !appState.selectedNode) return;
+
+                const action = item.dataset.action;
+                
+                switch (action) {
+                    case 'add':
+                        this.addChildNode();
+                        break;
+                    case 'edit':
+                        this.editNode();
+                        break;
+                    case 'delete':
+                        this.deleteNode();
+                        break;
+                }
+                
+                this.hideMenu();
+            }
+
+            static addChildNode() {
+                const newNodeId = 'node_' + Date.now();
+                const newTopic = '新节点';
+                appState.jm.add_node(appState.selectedNode, newNodeId, newTopic);
+                
+                // 选中新创建的节点并开始编辑
+                setTimeout(() => {
+                    const newNode = appState.jm.get_node(newNodeId);
+                    if (newNode) {
+                        appState.jm.select_node(newNode);
+                        // 自动开始编辑模式
+                        setTimeout(() => {
+                            appState.jm.begin_edit(newNode);
+                        }, 100);
+                    }
+                }, 100);
+            }
+
+            static editNode() {
+                const currentTopic = appState.selectedNode.topic;
+                const newTopic = prompt('请编辑节点内容:', currentTopic);
+                
+                if (newTopic !== null && newTopic !== currentTopic) {
+                    appState.jm.update_node(appState.selectedNode.id, newTopic);
+                }
+            }
+
+            static deleteNode() {
+                if (appState.selectedNode.id === 'root') {
+                    alert('不能删除根节点');
+                    return;
+                }
+                
+                if (confirm('确定要删除该节点吗？子节点也将被删除。')) {
+                    appState.jm.remove_node(appState.selectedNode.id);
+                }
+            }
+
+            static handleAddSibling(e) {
+                if (e) e.stopPropagation();
+                
+                if (!appState.selectedNode) {
+                    alert('请先选择一个节点');
+                    return;
+                }
+                
+                if (appState.selectedNode.id === 'root') {
+                    alert('根节点不能添加兄弟节点');
+                    return;
+                }
+                
+                const parentNode = appState.selectedNode.parent;
+                if (!parentNode) {
+                    alert('无法找到父节点');
+                    return;
+                }
+                appState.setMenuVisible(false);
+
+                const newNodeId = 'node_' + Date.now();
+                const newTopic = '新兄弟节点';
+                
+                // 添加兄弟节点
+                appState.jm.add_node(parentNode, newNodeId, newTopic);
+                
+                // 选中新创建的节点并开始编辑
+                setTimeout(() => {
+                    const newNode = appState.jm.get_node(newNodeId);
+                    if (newNode) {
+                        appState.suppressMenuOnce = true;
+                        appState.jm.select_node(newNode);
+                        // 自动开始编辑模式
+                        setTimeout(() => {
+                            appState.jm.begin_edit(newNode);
+                        }, 100);
+                    }
+                }, 100);
+            }
+
+            static handleAddChild(e) {
+                if (e) e.stopPropagation();
+                
+                // 如果没有选中节点，默认选择根节点
+                let targetNode = appState.selectedNode;
+                if (!targetNode) {
+                    targetNode = appState.jm.get_root();
+                    if (!targetNode) {
+                        alert('无法获取根节点');
+                        return;
+                    }
+                }
+                appState.setMenuVisible(false);
+                const newNodeId = 'node_' + Date.now();
+                const newTopic = '新子节点';
+                
+                // 添加子节点
+                appState.jm.add_node(targetNode, newNodeId, newTopic);
+                
+                // 选中新创建的节点并开始编辑
+                setTimeout(() => {
+                    const newNode = appState.jm.get_node(newNodeId);
+                    if (newNode) {
+                        appState.suppressMenuOnce = true;
+                        appState.jm.select_node(newNode);
+                        // 自动开始编辑模式
+                        setTimeout(() => {
+                            appState.jm.begin_edit(newNode);
+                        }, 100);
+                    }
+                }, 100);
+            }
+
+            static updateBottomButtonsState() {
+                const hasSiblingBtn = appState.elements.addSiblingBtn;
+                const hasChildBtn = appState.elements.addChildBtn;
+                
+                if (!hasSiblingBtn || !hasChildBtn) return;
+                
+                if (!appState.selectedNode) {
+                    // 没有选中节点时，禁用兄弟节点按钮，启用子节点按钮（添加到根节点）
+                    hasSiblingBtn.disabled = true;
+                    hasChildBtn.disabled = false;
+                } else if (appState.selectedNode.id === 'root') {
+                    // 根节点不能添加兄弟节点，但可以添加子节点
+                    hasSiblingBtn.disabled = true;
+                    hasChildBtn.disabled = false;
+                } else {
+                    // 普通节点可以添加兄弟节点和子节点
+                    hasSiblingBtn.disabled = false;
+                    hasChildBtn.disabled = false;
+                }
+            }
+
+            static handleExpandAll() {
+                const panel = appState.elements.showExpandType;
+                if (panel) {
+                    panel.style.display = 'block';
+                }
+
+                // 绑定一次性点击监听，点击外部关闭
+                const handleOutsideClick = (e) => {
+                    if (!panel.contains(e.target)) {
+                        panel.style.display = 'none';
+                        document.removeEventListener('click', handleOutsideClick);
+                    }
+                };
+
+                // 使用 setTimeout 确保点击按钮本身不立即触发
+                setTimeout(() => {
+                    document.addEventListener('click', handleOutsideClick);
+                }, 0);
+            }
+
+            static handleExportTypeClick(e) {
+                e.stopPropagation();
+
+                const type = e.currentTarget.dataset.type;
+
+                switch (type) {
+                    case 'pdf':
+                        NodeEditor.exportAsPDF();
+                    break;
+                    case 'image':
+                        NodeEditor.exportAsImage();
+                    break;
+                    default:
+                    console.warn('未知的导出类型:', type);
+                }
+
+                // 导出后关闭面板
+                appState.elements.showExpandType.style.display = 'none';
+            }
+
+            static exportAsPDF() {
+                console.log(11111111111111);
+                if (!appState.jm) return;
+                
+                const mindData = appState.jm.get_data('node_tree');
+                console.log('即将导出 PDF:', mindData);
+
+                // 这里可以调用 jsMind 的 API 或自定义逻辑
+                // 如果是要发给小程序，走 postMessage
+                if (window.uni) {
+                    uni.postMessage({
+                        data: {
+                            type: 'export',
+                            format: 'pdf',
+                            mindData: mindData
+                        }
+                    });
+                } else {
+                    console.log('在浏览器中：执行 PDF 生成...');
+                    // 这里可以接 PDF.js 或调用后端生成
+                }
+            }
+
+            static exportAsImage() {
+                try {
+                    // 1️⃣ 备份思维导图数据
+                    const mindData = appState.jm.get_data('node_tree');
+
+                    // 2️⃣ 创建隐藏容器
+                    const tempContainer = document.createElement('div');
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.left = '-9999px';
+                    tempContainer.style.top = '-9999px';
+                    tempContainer.style.width = '3000px'; // 足够大
+                    tempContainer.style.height = '3000px';
+                    tempContainer.style.background = '#fff'; // 防止透明
+                    document.body.appendChild(tempContainer);
+
+                    // 3️⃣ 在临时容器里重新渲染思维导图
+                    const options = {
+                        container: tempContainer,
+                        editable: false,
+                        theme: 'primary'
+                    };
+                    const tempMind = jsMind.show(options, {
+                        meta: { name: "MindMap", author: "export", version: "1.0" },
+                        format: "node_tree",
+                        data: mindData.data
+                    });
+
+                    // 4️⃣ 等待一帧，确保 DOM 渲染完毕
+                    setTimeout(() => {
+                        html2canvas(tempContainer, {
+                            backgroundColor: '#ffffff',
+                            useCORS: true
+                    }).then(canvas => {
+                        const imageBase64 = canvas.toDataURL('image/png');
+
+                        // 如果在 uniapp 中，通知小程序
+                        if (window.uni) {
+                            uni.postMessage({
+                                data: {
+                                type: 'export',
+                                format: 'image',
+                                imageBase64: imageBase64
+                                }
+                            });
+                        } else {
+                            // 否则直接下载
+                            const link = document.createElement('a');
+                            link.href = imageBase64;
+                            link.download = 'mindmap_full.png';
+                            link.click();
+                        }
+
+                        // 移除临时容器
+                        document.body.removeChild(tempContainer);
+                    }).catch(err => {
+                        console.error('全图截图失败:', err);
+                        document.body.removeChild(tempContainer);
+                    });
+                    }, 100); // 100ms 让 DOM 有机会渲染完
+                } catch (err) {
+                    console.error('全图导出异常:', err);
+                }
+            }
+
+        }
+
+        // 触摸和缩放管理模块
+        class TouchManager {
+            static init() {
+                this.initHammer();
+                this.bindTouchEvents();
+            }
+
+            static initHammer() {
+                const hammer = new Hammer(appState.elements.container);
+                hammer.get('pinch').set({ enable: true });
+                
+                let startScale = CONFIG.SCALE.DEFAULT;
+
+                hammer.on('pinchstart', (e) => {
                 e.preventDefault();
-                startScale = currentScale; // 记录 pinch 开始的缩放比例
+                    startScale = appState.currentScale;
+                    
+                    // 开始缩放时隐藏菜单
+                    if (appState.menuVisible) {
+                        NodeEditor.hideMenu();
+                    }
+                });
+
+                hammer.on('pinchmove', (e) => {
+                e.preventDefault();
+                    if (!appState.jm) return;
+
+                    let newScale = startScale * e.scale;
+                    newScale = Utils.clamp(newScale, CONFIG.SCALE.MIN, CONFIG.SCALE.MAX);
+                    appState.jm.view.setZoom(newScale);
+
+                    // 缩放时隐藏菜单
+                    if (appState.menuVisible) {
+                        NodeEditor.hideMenu();
+                    }
             });
 
-            // **监听双指缩放**
-            hammer.on("pinchmove", function (e) {
+                hammer.on('pinchend', (e) => {
                 e.preventDefault();
-                if (!jm) return;
+                    if (!appState.jm) return;
+                    
+                    appState.currentScale *= e.scale;
+                    appState.currentScale = Utils.clamp(appState.currentScale, CONFIG.SCALE.MIN, CONFIG.SCALE.MAX);
+                    console.log('缩放结束，当前比例:', appState.currentScale);
+                });
+            }
 
-                let newScale = currentScale * e.scale;
-                newScale = Math.max(minScale, Math.min(maxScale, newScale)); // 限制缩放范围
-
-                console.log(`🔍 Scaling: ${currentScale} → ${newScale}`);
-                jm.view.setZoom(newScale);
-            });
-
-            // **更新当前缩放比例**
-            hammer.on("pinchend", function (e) {
-                e.preventDefault();
-                if (!jm) return;
-                currentScale *= e.scale;
-                currentScale = Math.max(minScale, Math.min(maxScale, currentScale)); // 确保 scale 在允许范围内
-                console.log("📌 Pinch End: New Scale =", currentScale);
-            });
-
-            // **防止 iOS Safari 默认双指缩放**
-            document.addEventListener('gesturestart', function (e) {
+            static bindTouchEvents() {
+                // 防止iOS Safari默认双指缩放
+                document.addEventListener('gesturestart', (e) => {
                 e.preventDefault();
             });
 
-            // **阻止 touchmove 造成滚动**
-            document.addEventListener("touchmove", function (e) {
+                // 阻止touchmove造成滚动
+                document.addEventListener('touchmove', (e) => {
                 if (e.touches.length > 1) {
                     e.preventDefault();
                 }
             }, { passive: false });
+            }
+        }
+
+        // 应用状态实例
+        const appState = new AppState();
+
+        // 应用初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log(11111111111);
+            appState.initElements();
+            DataManager.fetchMindData();
+
+            // ✅ 在初始化后监听 UniAppJSBridgeReady
+            document.addEventListener('UniAppJSBridgeReady', () => {
+                console.log('✅ UniAppJSBridge 已准备好！');
+                window.uni = uni; // 挂到全局
+
+                // 🌟 你可以在这里测试主动发给小程序
+                uni.postMessage({
+                    data: {
+                        type: 'init',
+                        message: '思维导图已加载'
+                    }
+                });
+            });
         });
+
+        // 错误处理
+        window.addEventListener('error', (e) => {
+            console.error('全局错误:', e.error);
+            Utils.showErrorMessage('❌ 应用发生错误');
+        });
+
+        // 暴露到全局作用域（用于调试）
+        window.MindMapApp = {
+            appState,
+            Utils,
+            DataManager,
+            MindMapManager,
+            NodeEditor,
+            TouchManager
+        };
     </script>
 </body>
 </html>
